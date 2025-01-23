@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35506.116 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Small .Net Addons", "Small .Net Addons\Small .Net Addons.csproj", "{DD56E536-1F09-46D5-8EDF-27C062C23C75}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD56E536-1F09-46D5-8EDF-27C062C23C75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD56E536-1F09-46D5-8EDF-27C062C23C75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD56E536-1F09-46D5-8EDF-27C062C23C75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD56E536-1F09-46D5-8EDF-27C062C23C75}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
