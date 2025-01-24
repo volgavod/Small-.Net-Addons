@@ -13,7 +13,7 @@ namespace SmallDotNetAddons.Collections;
 	_tail -> _penultimate
 */
 
-public class LinkedList<T> : ICollection<T>, IDisposable
+public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 {
 	private int _count = 0;
 	private Node<T>? _head;
@@ -50,6 +50,17 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 		_tail = null;
 		_count = 0;
 	}
+	object ICloneable.Clone()
+	{
+		return Clone();
+	}
+	public LinkedList<T> Clone()
+	{
+		LinkedList<T> list = new();
+		foreach (T item in this)
+			list.AddLast(item);
+		return list;
+	}
 	public bool Contains(T item)
 	{
 		foreach (T toFind in this)
@@ -70,6 +81,40 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 			array[i + arrayIndex] = item;
 			i++;
 		}
+	}
+	public LinkedList<T> DeepClone(Func<T, T>? CustomClone = null, bool passUnclonable = false)
+	{
+		LinkedList<T> list = new();
+
+		foreach (T item in this)
+		{
+			if (item == null)
+			{	
+				list.AddLast(default);
+				continue;
+			}
+			if (CustomClone != null)
+			{
+				list.AddLast(CustomClone(item));
+			}
+			else if (item is ICloneable cloneable)
+			{
+				if (cloneable.Clone() is T clonedItem)
+					list.AddLast(clonedItem);
+				else
+					throw new InvalidCastException();
+			}
+			else if (passUnclonable)
+			{
+				list.AddLast(item);
+			}
+			else
+			{
+				throw new InvalidOperationException();
+			}
+		}
+
+		return list;
 	}
 	public void Dispose()
 	{
