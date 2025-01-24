@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 namespace SmallDotNetAddons.Collections;
 
 /*
-	Exceptions
 	summary
 	Async
 	+
-	Clone
 	_tail -> _penultimate
 */
 
@@ -70,16 +67,14 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	}
 	public void CopyTo(T[] array, int arrayIndex)
 	{
-		ArgumentNullException.ThrowIfNull(array);
-		ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+		ArgumentNullException.ThrowIfNull(array, "Array can't be null.");
+		ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex, "Array index must be positive.");
 		if (array.Length - arrayIndex < _count)
-			throw new ArgumentException();
-
-		int i = arrayIndex;
+			throw new ArgumentException("Array too small for copy all elements.");
 		foreach (T item in this)
 		{
-			array[i + arrayIndex] = item;
-			i++;
+			array[arrayIndex] = item;
+			arrayIndex++;
 		}
 	}
 	public LinkedList<T> DeepClone(Func<T, T>? CustomClone = null, bool passUnclonable = false)
@@ -99,10 +94,11 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 			}
 			else if (item is ICloneable cloneable)
 			{
-				if (cloneable.Clone() is T clonedItem)
+				object obj = cloneable.Clone();
+				if (obj is T clonedItem)
 					list.AddLast(clonedItem);
 				else
-					throw new InvalidCastException();
+					throw new InvalidCastException($"Cloned item of type {obj.GetType()} can't be casted to {typeof(T)} type");
 			}
 			else if (passUnclonable)
 			{
@@ -110,7 +106,7 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 			}
 			else
 			{
-				throw new InvalidOperationException();
+				throw new InvalidOperationException($"Item of type {item.GetType()} cannot be cloned. Use custom cloning or allow unclonable items.");
 			}
 		}
 
@@ -124,7 +120,7 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	private Node<T> ElementAt(int index)
 	{
 		if (index < 0 || index >= _count)
-			throw new IndexOutOfRangeException();
+			throw new IndexOutOfRangeException("Index was out of range. Must be non-negative and less than the size of the collection.");
 		Node<T> current = _head!;
 		for (int i = 0; i < index; i++)
 			current = current.Next!;
@@ -145,13 +141,13 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	}
 	public void Insert(int index, IEnumerable<T> items)
 	{
-		if (!items.Any()) return;										// exception
+		EmptyCollectionException.ThrowIfNullOrEmpty(items);
 		Insert(index, NodeSequence.Create(items));
 	}
 	private void Insert(int index, NodeSequence sequence)
 	{
 		if (index < 0 || index > _count)
-			throw new IndexOutOfRangeException();
+			throw new IndexOutOfRangeException("Index was out of range. Must be non-negative and not bigger than the size of the collection.");
 
 		if (index == 0)
 		{
@@ -212,7 +208,7 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	public void RemoveAt(int index)
 	{
 		if (index < 0 || index >= _count)
-			throw new IndexOutOfRangeException();
+			throw new IndexOutOfRangeException("Index was out of range. Must be non-negative and less than the size of the collection.");
 		if (_count == 1)
 		{
 			Clear();
@@ -259,7 +255,7 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	{
 		public static NodeSequence Create(IEnumerable<T> items)
 		{
-			if (!items.Any()) throw new Exception();										// exception
+			EmptyCollectionException.ThrowIfNullOrEmpty(items);
 			using LinkedList<T> list = new();
 			foreach (T item in items) list.AddLast(item);
 			return new NodeSequence(list._head!, list._tail!, list._count);
