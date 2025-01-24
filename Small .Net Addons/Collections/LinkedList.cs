@@ -8,6 +8,9 @@ namespace SmallDotNetAddons.Collections;
 	Exceptions
 	summary
 	Async
+	+
+	Clone
+	_tail -> _penultimate
 */
 
 public class LinkedList<T> : ICollection<T>, IDisposable
@@ -19,8 +22,8 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 	bool ICollection<T>.IsReadOnly => false;
 	public T this[int index]
 	{
-		get => GetByIndex(index).Item;
-		set => GetByIndex(index).Item = value;
+		get => ElementAt(index).Item;
+		set => ElementAt(index).Item = value;
 	}
 
 	public LinkedList() { }
@@ -73,6 +76,15 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 		Clear();
 		GC.SuppressFinalize(this);
 	}
+	private Node<T> ElementAt(int index)
+	{
+		if (index < 0 || index >= _count)
+			throw new IndexOutOfRangeException();
+		Node<T> current = _head!;
+		for (int i = 0; i < index; i++)
+			current = current.Next!;
+		return current;
+	}
 	public IEnumerator<T> GetEnumerator()
 	{
 		return new Enumerator(_head);
@@ -81,20 +93,6 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 	{
 		return GetEnumerator();
 	}
-	private Node<T> GetByIndex(int index)
-	{
-		if (index < 0 || index >= _count)
-			throw new IndexOutOfRangeException();
-
-		Node<T>? current = _head;
-		for (int i = 0; i < index; i++)
-		{
-			if (current?.Next == null && i == index - 1)
-				throw new IndexOutOfRangeException();
-			current = current?.Next;
-		}
-		return current!;
-	}
 	public void Insert(int index, T item)
 	{
 		Node<T> node = new(item);
@@ -102,7 +100,7 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 	}
 	public void Insert(int index, IEnumerable<T> items)
 	{
-		if (!items.Any()) return;
+		if (!items.Any()) return;										// exception
 		Insert(index, NodeSequence.Create(items));
 	}
 	private void Insert(int index, NodeSequence sequence)
@@ -135,82 +133,90 @@ public class LinkedList<T> : ICollection<T>, IDisposable
 	}
 	public bool Remove(T item)
 	{
-		if (_head == null || item == null)
+		if (_count == 0 || item == null)
+		{
 			return false;
-		if (item.Equals(_head))
-		{
-			_head = _head?.Next;
-			return true;
 		}
-		Node<T> previous = _head;
-		Node<T> current = _head.Next!;
-		for (int i = 1; i < _count; i++)
+		else if (_count == 1)
 		{
-			if (item.Equals(current.Item))
-				return RemoveNext(previous);
-			previous = current;
-			current = current.Next!;
-
+			if (_head!.AreEqual(item))
+			{
+				Clear();
+				return true;
+			}
+			return false;
+		}
+		else
+		{
+			Node<T>? previous = null;
+			Node<T> current = _head!;
+			for (int i = 0; i < _count; i++)
+			{
+				if (current.AreEqual(item))
+				{
+					RemoveNode(current, previous);
+					_count--;
+					return true;
+				}
+				previous = current;
+				current = current.Next!;
+			}
 		}
 		return false;
 	}
-	public bool RemoveAt(int index)
+	public void RemoveAt(int index)
 	{
-		if (index < 0 || index >= _count || _count == 0)
-			return false;
+		if (index < 0 || index >= _count)
+			throw new IndexOutOfRangeException();
 		if (_count == 1)
 		{
-			_head = null;
-			_tail = null;
+			Clear();
 		}
 		else if (index == 0)
 		{
 			_head = _head?.Next;
-			//Node<T> second = _head!.Next!;
-			//_head.Next = null;
-			//_head = second;
 		}
 		else
 		{
-			Node<T> previous = GetByIndex(index - 1);
-			return RemoveNext(previous);
+			Node<T> previous = ElementAt(index - 1);
+			RemoveNode(previous.Next!, previous);
 		}
 		_count--;
-		return true;
 	}
-	private bool RemoveNext(Node<T> previous)
+	private void RemoveNode(Node<T> removable, Node<T>? previous)
 	{
-		if (previous.Next == null)
-			return false;
-		Node<T> removable = previous.Next;
-		if (removable.Equals(_tail))
+		if (removable.Equals(_head))
 		{
-			previous.Next = null;
+			_head = _head.Next;
+		}
+		else if (removable.Equals(_tail))
+		{
+			previous!.Next = null;
 			_tail = previous;
 		}
 		else
 		{
-			previous.Next = removable.Next;
+			previous!.Next = removable.Next;
 			removable.Next = null;
 		}
-		_count--;
-		return true;
 	}
 
 	internal class Node<I>(I item)
 	{
 		public I Item = item;
 		public Node<I>? Next;
+		internal bool AreEqual(I otherItem)
+		{
+			return EqualityComparer<I>.Default.Equals(Item, otherItem);
+		}
 	}
 	private record NodeSequence(Node<T> Head, Node<T> Tail, int Count)
 	{
 		public static NodeSequence Create(IEnumerable<T> items)
 		{
-			if (!items.Any())
-				throw new Exception();
+			if (!items.Any()) throw new Exception();										// exception
 			using LinkedList<T> list = new();
-			foreach (T item in items)
-				list.AddLast(item);
+			foreach (T item in items) list.AddLast(item);
 			return new NodeSequence(list._head!, list._tail!, list._count);
 		}
 	}
