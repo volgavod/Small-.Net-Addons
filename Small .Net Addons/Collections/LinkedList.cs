@@ -3,13 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 namespace SmallDotNetAddons.Collections;
 
-/*
-	summary
-	Async
-	+
-	_tail -> _penultimate
-*/
-
 public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 {
 	private int _count = 0;
@@ -17,6 +10,10 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	private Node<T>? _tail;
 	public int Count => _count;
 	bool ICollection<T>.IsReadOnly => false;
+	/// <summary>
+	/// Don't use to iterate, because the access time is O((N-2)(N+1)/2).
+	/// Use foreach instead.
+	/// </summary>
 	public T this[int index]
 	{
 		get => ElementAt(index).Item;
@@ -37,9 +34,17 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	{
 		Insert(0, item);
 	}
+	public void AddFirst(IEnumerable<T> items)
+	{
+		Insert(0, items);
+	}
 	public void AddLast(T item)
 	{
 		Insert(_count, item);
+	}
+	public void AddLast(IEnumerable<T> items)
+	{
+		Insert(_count, items);
 	}
 	public void Clear()
 	{
@@ -53,10 +58,7 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	}
 	public LinkedList<T> Clone()
 	{
-		LinkedList<T> list = new();
-		foreach (T item in this)
-			list.AddLast(item);
-		return list;
+		return new(this);
 	}
 	public bool Contains(T item)
 	{
@@ -84,8 +86,8 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 		foreach (T item in this)
 		{
 			if (item == null)
-			{	
-				list.AddLast(default);
+			{
+				list.AddLast(item: default);
 				continue;
 			}
 			if (CustomClone != null)
@@ -95,10 +97,9 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 			else if (item is ICloneable cloneable)
 			{
 				object obj = cloneable.Clone();
-				if (obj is T clonedItem)
-					list.AddLast(clonedItem);
-				else
-					throw new InvalidCastException($"Cloned item of type {obj.GetType()} can't be casted to {typeof(T)} type");
+				list.AddLast(obj is T clonedItem 
+					? clonedItem 
+					: throw new InvalidCastException($"Cloned item of type {obj.GetType()} can't be casted to {typeof(T)} type"));
 			}
 			else if (passUnclonable)
 			{
@@ -134,11 +135,17 @@ public class LinkedList<T> : ICollection<T>, IDisposable, ICloneable
 	{
 		return GetEnumerator();
 	}
+	/// <summary>
+	/// Inserts an item at the specified index. If index = <see cref="Count"/>, the item is inserted at the end of the collection.
+	/// </summary>
 	public void Insert(int index, T item)
 	{
 		Node<T> node = new(item);
 		Insert(index, new NodeSequence(node, node, 1));
 	}
+	/// <summary>
+	/// Inserts items at the specified index. If index = <see cref="Count"/>, items is inserted at the end of the collection.
+	/// </summary>
 	public void Insert(int index, IEnumerable<T> items)
 	{
 		EmptyCollectionException.ThrowIfNullOrEmpty(items);
